@@ -22,10 +22,15 @@ export async function onRequest(context) {
     if (password) {
       passwordHash = await sha256(password);
     }
-    html = html.replace('window.__ENV__.PASSWORD = "{{PASSWORD}}";', 
-                        `window.__ENV__.PASSWORD = "${passwordHash}"; // SHA-256 hash`)
-               .replace('window.__ENV__.ADMIN_PASSWORD = "{{ADMIN_PASSWORD}}";',
-                        `window.__ENV__.ADMIN_PASSWORD = "${adminpassword}";`);
+    html = html
+        .replace(
+            /window\.__ENV__\.PASSWORD\s*=\s*"\{\{PASSWORD\}\}";/g,
+            `window.__ENV__.PASSWORD = "${passwordHash}";`
+        )
+        .replace(
+            /window\.__ENV__\.ADMIN_PASSWORD\s*=\s*"\{\{ADMIN_PASSWORD\}\}";/g,
+            `window.__ENV__.ADMIN_PASSWORD = "${adminpassword}";`
+        );
     
     // Create a new response with the modified HTML
     return new Response(html, {
