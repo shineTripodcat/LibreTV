@@ -1,3 +1,164 @@
+// 管理密码相关的变量
+let ADMIN_PASSWORD = '1234'; // 默认管理密码
+
+if (window.__ENV__ && window.__ENV__.ADMIN_PASSWORD) {
+    ADMIN_PASSWORD = window.__ENV__.ADMIN_PASSWORD;
+}
+
+// 检查用户是否已验证管理员密码
+function isAdminVerified() {
+    try {
+        const verificationData = JSON.parse(localStorage.getItem(ADMIN_PASSWORD_KEY) || '{}');
+        return verificationData && verificationData.verified;
+    } catch (error) {
+        return false;
+    }
+}
+
+// 验证管理员密码
+async function verifyAdminPassword(password) {
+    // 直接比较明文密码
+    const isValid = password === ADMIN_PASSWORD;
+    if (isValid) {
+        localStorage.setItem('adminVerified', JSON.stringify({ verified: true }));
+    }
+    return isValid;
+}
+
+// 显示管理员密码验证弹窗
+function showAdminPasswordModal() {
+    const adminPasswordModal = document.getElementById('adminPasswordModal');
+    if (adminPasswordModal) {
+        adminPasswordModal.style.display = 'flex';
+        
+        // 确保输入框获取焦点
+        setTimeout(() => {
+            const passwordInput = document.getElementById('adminPasswordInput');
+            if (passwordInput) {
+                passwordInput.focus();
+            }
+        }, 100);
+    }
+}
+
+// 隐藏管理员密码验证弹窗
+function hideAdminPasswordModal() {
+    const adminPasswordModal = document.getElementById('adminPasswordModal');
+    if (adminPasswordModal) {
+        adminPasswordModal.style.display = 'none';
+
+     // 清空密码输入框
+        const passwordInput = document.getElementById('adminPasswordInput');
+        if (passwordInput) {
+            passwordInput.value = '';
+        }
+    }
+}
+
+// 显示管理员密码错误信息
+function showAdminPasswordError() {
+    const errorElement = document.getElementById('adminPasswordError');
+    if (errorElement) {
+        errorElement.classList.remove('hidden');
+    }
+}
+
+// 隐藏管理员密码错误信息
+function hideAdminPasswordError() {
+    const errorElement = document.getElementById('adminPasswordError');
+    if (errorElement) {
+        errorElement.classList.add('hidden');
+    }
+}
+
+// 处理管理员密码提交事件
+async function handleAdminPasswordSubmit() {
+    const passwordInput = document.getElementById('adminPasswordInput');
+    const password = passwordInput ? passwordInput.value.trim() : '';
+    if (await verifyAdminPassword(password)) {
+        hideAdminPasswordError();
+        hideAdminPasswordModal();
+        const expirationTime = 1 * 1 * 60 * 60 * 1000; // 1天*1小时（毫秒）
+        const expirationDate = new Date(Date.now() + expirationTime);
+        
+        localStorage.setItem('HIDE_BUILTIN_ADULT_APIS', 'false');
+        localStorage.setItem('HIDE_BUILTIN_ADULT_APIS_EXPIRES', expirationDate.toISOString());
+        
+        // 修改 HIDE_BUILTIN_ADULT_APIS 的值
+        HIDE_BUILTIN_ADULT_APIS = false;
+        
+        // 重新初始化API设置面板，确保隐藏的API源显示
+        if (typeof initAPICheckboxes === 'function') {
+            initAPICheckboxes();
+        }
+        
+        // 可选：显示成功提示
+        showToast('已解锁隐藏的API源', 'success');
+    } else {
+        showAdminPasswordError();
+        if (passwordInput) {
+            passwordInput.value = '';
+            passwordInput.focus();
+        }
+    }
+}
+
+// 检查 HIDE_BUILTIN_ADULT_APIS 的状态是否过期
+function checkHideBuiltinAdultApisStatus() {
+    const savedStatus = localStorage.getItem('HIDE_BUILTIN_ADULT_APIS');
+    const savedExpires = localStorage.getItem('HIDE_BUILTIN_ADULT_APIS_EXPIRES');
+    
+    if (savedStatus === 'false' && savedExpires) {
+        const expirationDate = new Date(savedExpires);
+        if (new Date() > expirationDate) {
+            // 状态已过期，重置状态
+            localStorage.removeItem('HIDE_BUILTIN_ADULT_APIS');
+            localStorage.removeItem('HIDE_BUILTIN_ADULT_APIS_EXPIRES');
+            HIDE_BUILTIN_ADULT_APIS = true;
+            
+            // 可选：显示提示
+            showToast('隐藏API源的状态已过期，已重置', 'info');
+            if (!isAdminVerified()) {
+            // 仅清除隐藏API的选中状态
+               const previousAPIs = JSON.parse(localStorage.getItem('selectedAPIs') || '[]');
+               const newAPIs = previousAPIs.filter(api => !API_SITES[api]?.adult);
+               localStorage.setItem('selectedAPIs', JSON.stringify(newAPIs));
+               selectedAPIs = newAPIs;
+               updateSelectedApiCount();
+               initAPICheckboxes();
+             }
+        } else {
+            // 状态未过期，继续使用保存的状态
+            HIDE_BUILTIN_ADULT_APIS = false;
+        }
+    }
+}
+
+// 初始化管理员密码验证
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查 HIDE_BUILTIN_ADULT_APIS 的状态
+    checkHideBuiltinAdultApisStatus();
+    
+    const submitButton = document.getElementById('adminPasswordSubmitBtn');
+    if (submitButton) {
+        submitButton.addEventListener('click', handleAdminPasswordSubmit);
+    }
+    
+    const cancelButton = document.getElementById('adminPasswordCancelBtn');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', hideAdminPasswordModal);
+    }
+
+    const passwordInput = document.getElementById('adminPasswordInput');
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleAdminPasswordSubmit();
+            }
+        });
+    }
+});
+
 // 全局变量
 let selectedAPIs = JSON.parse(localStorage.getItem('selectedAPIs') || '["heimuer", "dbzy"]'); // 默认选中黑木耳和豆瓣资源
 let customAPIs = JSON.parse(localStorage.getItem('customAPIs') || '[]'); // 存储自定义API列表
