@@ -109,7 +109,8 @@
                     <button onclick="selectAllAPIs(false)" class="px-2 py-1 bg-[#333] hover:bg-[#444] text-white text-xs rounded">全不选</button>
                     <button onclick="selectAllAPIs(true, true)" class="px-2 py-1 bg-[#333] hover:bg-[#444] text-white text-xs rounded">全选普通资源</button>
                 </div>
-                
+                <!-- 设置面板中添加一个按钮 -->
+                <button onclick="showAdminPasswordModal()" class="px-2 py-1 bg-[#600] hover:bg-[#700] text-white text-xs rounded my-2">解锁隐藏源</button>
                 <!-- API选择区域 - 使用滚动区域 -->
                 <div class="max-h-40 overflow-y-auto bg-[#191919] p-2 rounded-lg mb-3">
                     <div id="apiCheckboxes" class="grid grid-cols-2 gap-2">
@@ -427,10 +428,11 @@
     <script>
         // 创建全局环境变量对象
         window.__ENV__ = window.__ENV__ || {};
-        
+
         // 注入服务器端环境变量 (将由服务器端替换)
         // PASSWORD 变量将在这里被服务器端注入
         window.__ENV__.PASSWORD = "{{PASSWORD}}";
+        window.__ENV__.ADMIN_PASSWORD = "{{ADMIN_PASSWORD}}";
     </script>
 
     <!-- 弹窗显示脚本 -->
